@@ -141,7 +141,7 @@
        "Official":[
           {
              "Address": "62.122.215.239",
-             "Port": 10007,
+             "Port": 10017,
              "Tags": ""
           },
           {
@@ -153,12 +153,7 @@
              "Address": "s2.hks.network",
              "Port": 10019,
              "Tags": ""
-          },
-      	  {
-             "Address": "s2.hks.network",
-             "Port": 10007,
-             "Tags": ""
-          },
+          }
        ], 
        "Banned": [
              "138.124.186.114",
