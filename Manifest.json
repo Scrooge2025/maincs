@@ -144,6 +144,16 @@
              "Port": 10007,
              "Tags": ""
           },
+          {
+             "Address": "s2.hks.network",
+             "Port": 10017,
+             "Tags": ""
+          },
+          {
+             "Address": "s2.hks.network",
+             "Port": 10019,
+             "Tags": ""
+          },
       	  {
              "Address": "s2.hks.network",
              "Port": 10007,
