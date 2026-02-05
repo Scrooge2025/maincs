@@ -1366,7 +1366,7 @@ throw;
 
         private void CreateRefreshUI(BasePlayer player, LootContainer crate)
         {
-            using var cui = Cui.Create(this, Anchor.Absolute(0.5f, 0f, 200, 300, 70, 100), UiColor.Black, UiParentLayer.Overlay);
+            using var cui = Cui.Create(this, PluginComponents.Loottable.Cui.Anchor.Absolute(0.5f, 0f, 200, 300, 70, 100), UiColor.Black, UiParentLayer.Overlay);
 
             cui.AddButton(Anchor.Fill, "Refresh Loot", p =>
             {
