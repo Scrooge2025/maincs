@@ -35,7 +35,7 @@ using Oxide.Plugins.LoottableInterop;
 using PluginComponents.Loottable;
 using PluginComponents.Loottable.Assertions;
 using PluginComponents.Loottable.Core;
-using PluginComponents.Loottable.Cui;I
+using PluginComponents.Loottable.Cui;
 using PluginComponents.Loottable.Cui.Images;
 using PluginComponents.Loottable.Cui.Style;
 using PluginComponents.Loottable.Extensions.Reflection;
@@ -44,7 +44,7 @@ using PluginComponents.Loottable.Extensions.Lang;
 using ProtoBuf;
 using System;
 using System.Collections.Generic;
-using System.IO;Ш
+using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
 using Oxide.Core.Libraries;
@@ -199,6 +199,8 @@ namespace Oxide.Plugins
         [PluginReference, UsedImplicitly]
         private readonly Plugin ImageLibrary, RustTranslationAPI, DeployableNature, LootDefender, FancyDrop, SimpleSplitter;
 
+        private bool IsReady => manager != null;
+
         #region Hooks
 
         #region Default
@@ -224,7 +226,7 @@ ___flow += "c";
 ___flow += "d";
             state.Update(Version);
 ___flow += "e";
-            state.Save();
+            state?.Save();
 ___flow += "f";
 
             LogDebug($"Fresh install: {state.IsFreshInstall} Update: {state.IsUpdated}");
@@ -292,7 +294,7 @@ throw;
 
             UpdateQuarries(true);
 
-            state.Save();
+            state?.Save();
 
             SmeltingConfiguration.ResetBurnable();
                 
@@ -314,7 +316,7 @@ throw;
         {
             base.OnServerInitializedDelayed();
             
-            if (!imageHelper.Initialized && (ImageLibrary != null || CARBONARA))
+            if (!imageHelper.Initialized && (ImageLibrary != null || CARBONARA) && manager != null)
             {
                 imageHelper.Init();
                 manager.InitImageLookup();
@@ -326,6 +328,11 @@ throw;
         [Hook] void OnPluginLoaded(Plugin plugin)
         {
             if (plugin == null)
+            {
+                return;
+            }
+
+            if (!IsReady)
             {
                 return;
             }
@@ -345,6 +352,11 @@ throw;
         
         [Hook] void OnPluginUnloaded(Plugin plugin)
         {
+            if (!IsReady || plugin == null)
+            {
+                return;
+            }
+
             manager.CustomItems.RemoveCustomItems(plugin, false);
             
             if (plugin.Name == nameof(FancyDrop) || plugin.Name == nameof(SimpleSplitter) || plugin.Name == nameof(LootDefender))
@@ -360,6 +372,11 @@ throw;
         // ReSharper disable once RedundantNameQualifier
         [Hook] object OnCorpseApplyLoot(global::HumanNPC npc, NPCPlayerCorpse corpse)
         {
+            if (!IsReady)
+            {
+                return null;
+            }
+
             if (!CanPopulateCorpseHook(corpse))
             {
                 return null;
@@ -377,6 +394,11 @@ throw;
         
         [Hook] object OnCorpseApplyLoot(ScarecrowNPC npc, NPCPlayerCorpse corpse)
         {
+            if (!IsReady)
+            {
+                return null;
+            }
+
             if (!CanPopulateCorpseHook(corpse))
             {
                 return null;
@@ -397,6 +419,11 @@ throw;
             int label = 0;
             try
             {
+                if (!IsReady)
+                {
+                    return null;
+                }
+
                 if (!container.IsValid())
                 {
                     return null;
@@ -437,6 +464,11 @@ throw;
 
         [Hook] object OnCollectiblePickup(CollectibleEntity entity, BasePlayer player, bool eat)
         {
+            if (!IsReady)
+            {
+                return null;
+            }
+
             if (player == null || entity == null || eat)
             {
                 return null;
@@ -489,6 +521,11 @@ throw;
 
         [Hook] object OnItemAction(Item item, string action, BasePlayer player)
         {
+            if (!IsReady)
+            {
+                return null;
+            }
+
             if (item?.info != null && action == "unwrap")
             {
                 var config = manager.GetConfig(item);
@@ -516,6 +553,11 @@ throw;
 
         [Hook] object OnTrainWagonLootSpawn(TrainCarUnloadable wagon, StorageContainer container)
         {
+            if (!IsReady)
+            {
+                return null;
+            }
+
             var config = manager.GetConfig(wagon);
             if (config != null && config.Enabled)
             {
@@ -530,6 +572,11 @@ throw;
 
         [Hook] float? OnTrainWagonOreLevel(TrainCarUnloadable wagon)
         {
+            if (!IsReady)
+            {
+                return null;
+            }
+
             var config = manager.GetConfig(wagon);
             if (config != null && config.Enabled)
             {
@@ -546,6 +593,11 @@ throw;
 
         [Hook] void OnQuarryToggled(MiningQuarry quarry)
         {
+            if (!IsReady)
+            {
+                return;
+            }
+
             if (!quarry.isStatic)
             {
                 return;
@@ -565,6 +617,11 @@ throw;
 
         [Hook] object OnExcavatorProduceResources(ExcavatorArm arm)
         {
+            if (!IsReady)
+            {
+                return null;
+            }
+
             var config = manager.GetConfig(arm);
             if (config != null && config.Enabled)
             {
@@ -599,6 +656,11 @@ throw;
 
         [Hook] void OnResourceDispenserInitialize(ResourceDispenser dispenser)
         {
+            if (!IsReady)
+            {
+                return;
+            }
+
             if (dispenser.baseEntity == null)
             {
                 return;
@@ -637,6 +699,11 @@ throw;
         [Hook] void OnPreDispenserBonus(ResourceDispenser dispenser, BasePlayer player, Item item) => OnPreDispenserGather(dispenser, player, item);
         [Hook] void OnPreDispenserGather(ResourceDispenser dispenser, BasePlayer player, Item item)
         {
+            if (!IsReady)
+            {
+                return;
+            }
+
             var config = manager.GetConfig(dispenser.baseEntity);
             if (config != null && config.Enabled)
             {
@@ -712,6 +779,11 @@ throw;
         
         [Hook] void OnGrowableGathered(GrowableEntity plant, Item item, BasePlayer player)
         {
+            if (!IsReady)
+            {
+                return;
+            }
+
             var config = manager.GetConfig(plant);
             if (config != null && config.Enabled)
             {
@@ -1294,7 +1366,7 @@ throw;
 
         private void CreateRefreshUI(BasePlayer player, LootContainer crate)
         {
-            using var cui = Cui.Create(this, Anchor.Absolute(0.5f, 0f, 200, 300, 70, 100), UiColor.Black, UiParentLayer.Overlay);
+            using var cui = Cui.Create(this, PluginComponents.Loottable.Cui.Anchor.Absolute(0.5f, 0f, 200, 300, 70, 100), UiColor.Black, UiParentLayer.Overlay);
 
             cui.AddButton(Anchor.Fill, "Refresh Loot", p =>
             {
@@ -9109,6 +9181,370 @@ throw;
                 ["sp_sz_efficiency_percent"] = "Safe Zone Recycler efficiency (%)",
                 
             }, this);
+
+            lang.RegisterMessages(new Dictionary<string, string>()
+            {
+                ["pagecount"] = "Страница {0} из {1}",
+
+                ["btn_new_cat"] = "Новая категория",
+                ["btn_save"] = "Сохранить",
+                ["btn_cancel"] = "Отмена",
+                ["btn_done"] = "Готово",
+                ["btn_all"] = "Все",
+                ["btn_ok"] = "ОК",
+                ["btn_multiply"] = "Умножить",
+                ["btn_delete"] = "Удалить",
+                ["btn_moveto"] = "Переместить в",
+                ["btn_select"] = "Выбрать",
+                ["btn_paste"] = "Вставить",
+                ["btn_copy"] = "Копировать",
+                ["btn_ltdefault"] = "Загрузить по умолчанию",
+                ["btn_additem"] = "Добавить предмет",
+                ["btn_addcustom"] = "Новый кастомный предмет",
+                ["btn_addgroup"] = "Новая группа",
+                ["btn_delgroup"] = "Удалить группу",
+                ["btn_edit_stacksize"] = "Изменить размеры стаков",
+                ["btn_add"] = "Добавить",
+
+                ["multiply_title"] = "Умножить количество предмета",
+
+                ["tip"] = "Подсказка",
+                ["dispenser_info_2"] = "Дополнительные предметы не требуются для работы конфигурации добычи.\nДополнительные предметы в первой категории будут выданы после завершения добычи.",
+                ["gather_multipliers"] = "Множители добычи:",
+                ["gather_additions"] = "Дополнительные предметы добычи:",
+                ["gather_multipliers_growable"] = "Множители добычи для выращиваемых:",
+
+                ["delete_title"] = "Удалить выбранные предметы",
+                ["delete_desc"] = "Вы уверены, что хотите удалить все выбранные предметы? Это действие нельзя отменить.",
+
+                ["paste_title"] = "Вставить конфиг {0}",
+                ["paste_desc"] = "Это перезапишет текущий конфиг. Это действие нельзя отменить.",
+
+                ["ltdefault_title"] = "Загрузить стандартную таблицу лута",
+                ["ltdefault_desc"] = "Это действие перезапишет текущую таблицу лута." +
+                                    "\n<color=red><b>ВАЖНО: стандартная таблица может немного отличаться от ванильной таблицы Rust по техническим причинам. Рекомендуется использовать её только как точку отсчёта.</b></color>",
+
+                ["editor_head"] = "Редактировать {0} ({1})",
+                ["editor_remove_corpse"] = "Удалить труп",
+                ["editor_total_amount"] = "Общее количество предметов",
+                ["editor_loot_type"] = "Тип лута",
+                ["editor_settings"] = "Настройки",
+
+                ["order_label"] = "Сортировать по",
+                ["order_category_desc"] = "Категория (убыв.)",
+                ["order_category"] = "Категория",
+                ["order_chance"] = "Шанс",
+                ["order_chance_desc"] = "Шанс (убыв.)",
+
+                ["categories"] = "Категории",
+                ["category_select"] = "Выбрать категорию",
+                ["category_default"] = "Категория по умолчанию",
+                ["category_id"] = "Категория {0}",
+
+                ["ieditor_head"] = "Редактировать {0} в {1}",
+                ["ieditor_head_extra"] = "Редактировать дополнительный предмет",
+                ["ieditor_extra"] = "Дополнительные предметы",
+                ["seditor_cat_multiplier"] = "Множитель категории для {0}",
+                ["seditor_global_multiplier"] = "Глобальный множитель",
+                ["seditor_info"] = "Предметы с пользовательским множителем категории не зависят от глобального множителя.",
+                ["seditor_reset"] = "Сбросить до ванильных",
+                ["seditor_reset_text"] = "Вы уверены, что хотите сбросить конфигурацию до ванильной? Это действие нельзя отменить.",
+                ["seditor_hotbar_stacks"] = "Ограничить размер стака в хотбаре",
+                ["seditor_no_group"] = "Группа префабов не выбрана",
+                ["seditor_prefabs"] = "Группы префабов",
+                ["seditor_enabled"] = "Контроллер размера стака",
+                ["seditor_prefab_count"] = "{0} префаб(ов)",
+                ["seditor_entry_empty"] = "Пустая группа префабов",
+                ["seditor_entry_multiple"] = "{0} + ещё {1}",
+                ["seditor_add_prefab"] = "Добавить префаб",
+                ["seditor_default_desc"] = "Используется для всех префабов, у которых нет группы",
+                ["seditor_head"] = "Редактировать размеры стаков для {0}",
+
+                ["chance_percent"] = "Шанс %",
+                ["condition_percent"] = "Прочность %",
+                ["amount"] = "Количество",
+                ["shortname"] = "Короткое имя",
+                ["blueprint"] = "Чертёж",
+                ["customname"] = "Пользовательское имя",
+                ["skinid"] = "ID скина",
+                ["preview"] = "Превью",
+                ["item_list"] = "Список предметов",
+
+                ["enabled"] = "Включено",
+                ["disabled"] = "Отключено",
+                ["default"] = "По умолчанию",
+                ["invalid"] = "Некорректно",
+                ["custom_loot"] = "Кастомный лут",
+                ["vanilla"] = "Ванильный",
+                ["custom"] = "Кастомный",
+                ["vanilla_a"] = "Ванильный + дополнения",
+                ["blacklist"] = "Чёрный список",
+                ["stack_size_control"] = "Контроль размера стака",
+                ["gather_control"] = "Контроль добычи",
+                ["plugins"] = "Плагины",
+                ["custom_item_manager"] = "Менеджер кастомных предметов",
+                ["custom_item_info"] = "Нажмите на кастомный предмет, чтобы отредактировать его.\n\nКастомные предметы, созданные другими плагинами, нельзя редактировать.",
+                ["custom_items_edit"] = "Редактировать кастомный предмет",
+
+                // Default tabs
+                ["crates"] = "Ящики",
+                ["crates_normal"] = "Обычные",
+                ["crates_diving"] = "Для дайвинга",
+                ["crates_roadside"] = "У дороги",
+                ["crates_special"] = "Особые",
+                ["crates_misc"] = "Разное",
+                ["collectibles"] = "Собираемое",
+                ["gathering"] = "Добыча",
+                ["ore"] = "Руда",
+                ["animals"] = "Животные",
+                ["cactus"] = "Кактусы",
+                ["driftwood_logs"] = "Плавник",
+                ["palms"] = "Пальмы",
+                ["trees"] = "Деревья",
+                ["quarries"] = "Карьерные установки",
+                ["excavator"] = "Экскаватор",
+                ["train_wagons"] = "Вагоны",
+                ["seasonal"] = "Сезонные предметы",
+                ["christmas"] = "Рождество",
+                ["easter"] = "Пасха",
+                ["halloween"] = "Хэллоуин",
+                ["crates_other"] = "Другие ящики",
+                ["crates_underwater"] = "Подводные ящики",
+                ["crates_invisible"] = "Невидимые ящики",
+                ["crates_deathmatch"] = "Ящики Deathmatch",
+                ["crates_train"] = "Ящики вагонов",
+
+                // Crates tab
+                ["crate_basic"] = "Простой ящик",
+                ["crate_normal"] = "Обычный ящик",
+                ["crate_military"] = "Военный ящик",
+                ["crate_elite"] = "Элитный ящик",
+                ["crate_mine"] = "Шахтный ящик",
+                ["crate_food"] = "Ящик с едой",
+                ["crate_medical"] = "Медицинский ящик",
+                ["crate_tools"] = "Ящик с инструментами",
+                ["crate_food_2"] = "Коробка с едой",
+                ["crate_minecart"] = "Шахтная тележка",
+                ["crate_vehicle_parts"] = "Ящик с запчастями",
+                ["crate_underwater_basic"] = "Простой подводный ящик",
+                ["crate_underwater_advanced"] = "Продвинутый подводный ящик",
+                ["barrel"] = "Бочка",
+                ["barrel_oil"] = "Нефтяная бочка",
+                ["roadsign"] = "Дорожный знак",
+                ["crate_hackable"] = "Взламываемый ящик",
+                ["crate_hackable_oilrig"] = "Взламываемый ящик нефтевышки",
+                ["crate_apc"] = "Ящик БТР",
+                ["crate_heli"] = "Ящик вертолёта",
+                ["crate_supplydrop"] = "Снабжение",
+                ["crate_food_cache"] = "Кэш с едой",
+                ["crates_food"] = "Ящики с едой",
+
+                // NPC tab
+                ["npcs"] = "NPC",
+                ["npc_militunnel"] = "Учёный военных туннелей",
+                ["npc_cargoship"] = "Учёный грузового корабля",
+                ["npc_tunneldweller"] = "Туннельный житель",
+                ["npc_scarecrow"] = "Пугало",
+                ["npc_excavator"] = "Учёный экскаватора",
+                ["npc_heavy"] = "Тяжёлый учёный",
+                ["npc_oilrig"] = "Учёный нефтевышки",
+                ["npc_chinook"] = "Учёный CH47",
+                ["npc_junkpile"] = "Учёный свалки",
+                ["npc_underwaterdweller"] = "Учёный подводной лаборатории",
+                ["npc_desert"] = "Учёный военной базы в пустыне",
+                ["npc_missilesilo_nvg"] = "Учёный ракетной шахты (ПНВ)",
+                ["npc_missilesilo"] = "Учёный ракетной шахты",
+                ["npc_trainyard"] = "Учёный железнодорожной станции",
+                ["npc_airfield"] = "Учёный аэродрома",
+                ["npc_launchsite"] = "Учёный стартовой площадки",
+                ["npc_arctic"] = "Учёный арктической базы",
+                ["npc_gingerbread"] = "Пряничный NPC",
+                ["npc_bradley"] = "Учёный Bradley",
+                ["npc_bradley_heavy"] = "Тяжёлый учёный Bradley",
+
+                // Collectible tab
+                ["collectible_diesel"] = "Бочка с дизелем",
+                ["collectible_wood"] = "Пень",
+                ["collectible_stone"] = "Камень",
+                ["collectible_sulfur"] = "Серная руда",
+                ["collectible_metal"] = "Металлическая руда",
+                ["collectible_pumpkin"] = "Тыква",
+                ["collectible_potato"] = "Картофель",
+                ["collectible_mushroom"] = "Гриб",
+                ["collectible_hemp"] = "Конопля",
+                ["collectible_corn"] = "Кукуруза",
+                ["collectible_berry_yellow"] = "Жёлтая ягода",
+                ["collectible_berry_white"] = "Белая ягода",
+                ["collectible_berry_red"] = "Красная ягода",
+                ["collectible_berry_green"] = "Зелёная ягода",
+                ["collectible_berry_blue"] = "Синяя ягода",
+                ["collectible_berry_black"] = "Чёрная ягода",
+                ["collectible_rose"] = "Роза",
+                ["collectible_wheat"] = "Пшеница",
+                ["collectible_sunflower"] = "Подсолнух",
+                ["collectible_orchid"] = "Орхидея",
+
+                // Gathering tab
+                ["ore_stone"] = "Каменная руда",
+                ["ore_metal"] = "Металлическая руда",
+                ["ore_sulfur"] = "Серная руда",
+                ["corpse_chicken"] = "Курица",
+                ["corpse_boar"] = "Кабан",
+                ["corpse_stag"] = "Олень",
+                ["corpse_bear"] = "Медведь",
+                ["corpse_polarbear"] = "Полярный медведь",
+                ["tree_swamp"] = "Болотное дерево",
+                ["special"] = "Особое",
+                ["gibs_bradley"] = "Обломки Bradley",
+                ["gibs_heli"] = "Обломки патрульного вертолёта",
+                ["wood_pile"] = "Старый дровяной штабель",
+                ["tree"] = "Дерево",
+                ["tree_palm"] = "Пальма",
+                ["logs"] = "Брёвна",
+                ["corpses"] = "Трупы",
+                ["driftwood"] = "Плавник",
+                ["corpse_scientist"] = "Учёный",
+                ["corpse_wolf"] = "Волк",
+                ["cactus"] = "Кактус",
+
+                // Quarries tab
+                ["quarry_oil"] = "Нефтяная качалка",
+                ["quarry_any"] = "Карьер всего",
+                ["quarry_stone"] = "Каменный карьер",
+                ["quarry_sulfur"] = "Серный карьер",
+                ["quarry_hqm"] = "Карьер МВК",
+                ["quarry_excavator_stone"] = "Экскаватор: камень",
+                ["quarry_excavator_sulfur"] = "Экскаватор: серная руда",
+                ["quarry_excavator_metal"] = "Экскаватор: металл",
+                ["quarry_excavator_hqm"] = "Экскаватор: МВК руда",
+                ["wagon_metal"] = "Вагон с металлом",
+                ["wagon_sulfur"] = "Вагон с серой",
+                ["wagon_charcoal"] = "Вагон с углём",
+                ["wagon_fuel"] = "Вагон с топливом",
+
+                // Seasonal tab
+                ["present_large"] = "Большой подарок",
+                ["present_medium"] = "Средний подарок",
+                ["present_small"] = "Маленький подарок",
+                ["egg_bronze"] = "Бронзовое яйцо",
+                ["egg_silver"] = "Серебряное яйцо",
+                ["egg_gold"] = "Золотое яйцо",
+                ["lootbag_small"] = "Маленький мешок лута",
+                ["lootbag_medium"] = "Средний мешок лута",
+                ["lootbag_large"] = "Большой мешок лута",
+                ["crate_present_drop"] = "Подарочный сброс",
+                ["crate_present_small"] = "Подарочная коробка",
+
+                // Other crates tab
+                ["crate_basic_underwater"] = "Простой подводный ящик",
+                ["crate_military_underwater"] = "Военный подводный ящик",
+                ["crate_elite_underwater"] = "Элитный подводный ящик",
+                ["crate_ammo_underwater"] = "Подводный ящик с патронами",
+                ["crate_food_underwater"] = "Подводный ящик с едой",
+                ["crate_fuel_underwater"] = "Подводный ящик с топливом",
+                ["crate_medical_underwater"] = "Подводный медицинский ящик",
+                ["crate_tools_underwater"] = "Подводный ящик с инструментами",
+                ["crate_techparts_underwater"] = "Подводный ящик с деталями",
+                ["crate_vehicle_parts_underwater"] = "Подводный ящик с запчастями",
+                ["dm_ammo"] = "DM Патроны",
+                ["dm_c4"] = "DM C4",
+                ["dm_construction_resources"] = "DM Строительные ресурсы",
+                ["dm_construction_tools"] = "DM Строительные инструменты",
+                ["dm_food"] = "DM Еда",
+                ["dm_medical"] = "DM Медицина",
+                ["dm_resources"] = "DM Ресурсы",
+                ["dm_tier1"] = "DM Тир 1",
+                ["dm_tier2"] = "DM Тир 2",
+                ["dm_tier3"] = "DM Тир 3",
+                ["crate_basic_invisible"] = "Невидимый простой ящик",
+                ["crate_normal_invisible"] = "Невидимый обычный ящик",
+                ["crate_military_invisible"] = "Невидимый военный ящик",
+                ["crate_elite_invisible"] = "Невидимый элитный ящик",
+                ["crate_food_invisible"] = "Невидимый ящик с едой",
+                ["crate_medical_invisible"] = "Невидимый медицинский ящик",
+                ["crate_tools_invisible"] = "Невидимый ящик с инструментами",
+                ["crate_food_2_invisible"] = "Невидимая коробка с едой",
+                ["crate_vehicle_parts_invisible"] = "Невидимый ящик с запчастями",
+                ["crate_hackable_invisible"] = "Невидимый запертый ящик",
+                ["wagon_crate_normal"] = "Обычный вагонный ящик",
+                ["wagon_crate_military"] = "Военный вагонный ящик",
+                ["wagon_crate_food"] = "Вагонный ящик с едой",
+                ["wagon_crate_medical"] = "Вагонный медицинский ящик",
+
+                // Item categories
+                ["weapon"] = "Оружие",
+                ["construction"] = "Строительство",
+                ["items"] = "Предметы",
+                ["resources"] = "Ресурсы",
+                ["attire"] = "Одежда",
+                ["tool"] = "Инструменты",
+                ["medical"] = "Медицина",
+                ["food"] = "Еда",
+                ["ammunition"] = "Боеприпасы",
+                ["traps"] = "Ловушки",
+                ["misc"] = "Разное",
+                ["all"] = "Все",
+                ["common"] = "Обычное",
+                ["component"] = "Компоненты",
+                ["search"] = "Поиск",
+                ["favourite"] = "Избранное",
+                ["electrical"] = "Электрика",
+                ["fun"] = "Развлечения",
+                
+                ["enable_failed"] = "Не удалось включить профиль лута",
+                ["not_enough_items_custom"] = "В стандартной категории (серой) должен быть хотя бы 1 предмет",
+                ["not_enough_items_addition"] = "Должен быть хотя бы 1 дополнительный предмет",
+                ["not_enough_items_blacklist"] = "В чёрном списке должен быть хотя бы 1 предмет",
+                
+                // Settings
+                ["loot_refresh"] = "Автообновление лута",
+                ["settings"] = "Настройки",
+                ["import"] = "Импорт",
+                ["import_confirmation"] = "Подтвердить импорт",
+                ["import_loot"] = "Импортировать конфигурации лута из V1",
+                ["import_confirmation_loot"] = "Это действие перезапишет текущие профили лута и не может быть отменено!\nПосле завершения импорта плагин автоматически перезагрузится.",
+                ["import_stacksize"] = "Импортировать конфигурацию размеров стаков из V1",
+                ["import_confirmation_stacksize"] = "Это действие перезапишет текущую конфигурацию размеров стаков и не может быть отменено!\nПосле завершения импорта плагин автоматически перезагрузится.",
+                ["import_customitems"] = "Импортировать кастомные предметы из V1",
+                ["import_confirmation_customitems"] = "Вы собираетесь импортировать кастомные предметы из V1. После завершения импорта плагин автоматически перезагрузится.",
+                ["loot_refresh_warning"] = "Обновление лута. Ожидайте небольшие лаги.",
+                ["import_configuration"] = "Импортировать конфигурации плавки, переработчика и снабжения из V1",
+                ["import_confirmation_configuration"] = "Это действие перезапишет текущие конфигурации плавки, переработчика и снабжения!",
+                
+                // Configuration
+                ["configuration"] = "Конфигурация",
+                ["configuration_smelting"] = "Конфигурация плавки",
+                ["sp_furnace_small"] = "Множитель скорости маленькой печи",
+                ["sp_furnace_large"] = "Множитель скорости большой печи",
+                ["sp_furnace_electric"] = "Множитель скорости электрической печи",
+                ["sp_refinery"] = "Множитель скорости нефтепереработчика",
+                ["sp_bbq"] = "Множитель скорости барбекю",
+                ["sp_campfire"] = "Множитель скорости костра",
+                ["sp_mixing_table"] = "Множитель скорости стола смешивания",
+                ["charcoal_amount"] = "Количество угля, получаемого из 1 дерева",
+                ["charcoal_chance_percent"] = "Шанс превращения дерева в уголь при сгорании (%)",
+                ["sp_disabled_by_plugin"] = "Конфигурация плавки недоступна, когда загружен <b>SimpleSplitter</b>.",
+                
+                ["configuration_supply_drop"] = "Конфигурация снабжения",
+                ["sd_plane_speed"] = "Множитель скорости грузового самолёта",
+                ["sd_plane_height"] = "Высота полёта грузового самолёта (может быть отрицательной)",
+                ["sd_smoke_duration"] = "Длительность дыма сигнальной ракеты (сек.)",
+                ["sd_fall_speed"] = "Скорость падения снабжения (меньше = быстрее)",
+                ["sd_drop_smoke"] = "Эффект дыма снабжения",
+                ["sd_exact_position"] = "Снабжение падает точно туда, где была брошена сигнальная ракета",
+                ["sd_position_tolerance"] = "Допуск позиции снабжения",
+                ["sd_disabled_by_plugin"] = "Конфигурация снабжения недоступна, когда загружены <b>FancyDrop</b> или <b>LootDefender</b>.",
+                ["sd_cooldown_toast"] = "Перезарядка! Осталось: {0}м {1}с",
+                ["sd_cooldown"] = "Кулдаун между сигнальными ракетами",
+                ["sd_cooldown_time"] = "Время кулдауна (на игрока, сек.)",
+                
+                ["configuration_recycler"] = "Конфигурация переработчика",
+                ["sp_speed"] = "Множитель скорости переработчика в радтауне",
+                ["sp_efficiency_percent"] = "Эффективность переработчика в радтауне (%)",
+                ["sp_sz_speed"] = "Множитель скорости переработчика в сейф-зоне",
+                ["sp_sz_efficiency_percent"] = "Эффективность переработчика в сейф-зоне (%)",
+                
+            }, this, "ru");
         }
 
         #endregion
